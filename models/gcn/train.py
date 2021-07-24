@@ -2,6 +2,7 @@ from pathlib import Path
 from loguru import logger
 
 import dgl
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -12,6 +13,18 @@ class Training:
 
     def __init__(self, dataset_path: Path) -> None:
         self.dataset_path = dataset_path
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        logger.info("Using device {}".format(self.device))
+        self.set_random_seeds()  # for reproducibility
+
+    def set_random_seeds(self):
+        np.random.seed(42)
+        torch.manual_seed(42)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(42)
+            torch.cuda.manual_seed_all(42)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
     def prepare_dataset(self) -> dgl.data.DGLDataset:
         dataset = dgl.data.CoraGraphDataset(
@@ -27,11 +40,11 @@ class Training:
         dataset = self.prepare_dataset()
         # A DGLDataset can contain 1 or more graphs. CORA only has 1 graph.
         g = dataset[0]
-        features = g.ndata['feat']  # (2708,1433)
-        labels = g.ndata['label']  # (2708,)
-        train_mask = g.ndata['train_mask']
-        val_mask = g.ndata['val_mask']
-        test_mask = g.ndata['test_mask']
+        features = g.ndata['feat'].to(self.device)  # (2708,1433)
+        labels = g.ndata['label'].to(self.device)  # (2708,)
+        train_mask = g.ndata['train_mask'].to(self.device)
+        val_mask = g.ndata['val_mask'].to(self.device)
+        test_mask = g.ndata['test_mask'].to(self.device)
 
         # 2. Instantiate model instance
         model = GCN(
@@ -39,6 +52,7 @@ class Training:
             hidden_dim=16,
             num_classes=dataset.num_classes,
         )
+        model.to(self.device)
 
         # 3. Prep training
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
