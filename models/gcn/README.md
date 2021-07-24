@@ -4,3 +4,4 @@ Paper: [Semi-Supervised Classification with Graph Convolutional Networks](https:
 
 
 pytorch, dgl, tensorboard,
+save out and visualize embeddings

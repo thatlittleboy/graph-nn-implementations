@@ -27,8 +27,8 @@ class Training:
         dataset = self.prepare_dataset()
         # A DGLDataset can contain 1 or more graphs. CORA only has 1 graph.
         g = dataset[0]
-        features = g.ndata['feat']
-        labels = g.ndata['label']
+        features = g.ndata['feat']  # (2708,1433)
+        labels = g.ndata['label']  # (2708,)
         train_mask = g.ndata['train_mask']
         val_mask = g.ndata['val_mask']
         test_mask = g.ndata['test_mask']
@@ -46,19 +46,19 @@ class Training:
 
         # 4. Training iteration
         logger.info("Starting training...")
-        for epoch in range(num_epochs):
-            logits = model(g, features)  # size 2708 x 7
-            preds = logits.argmax(axis=1)
+        for epoch in range(1, num_epochs + 1):
+            logits = model(g, features)  # (2708,7)
+            preds = logits.argmax(axis=1)  # (2708,)
 
             # (!) Only compute loss on training set
             # (!) Cross-entropy loss is calculated w.r.t. logits, not the softmax-ed for stability
             loss = F.cross_entropy(logits[train_mask], labels[train_mask])
 
-            train_acc = (preds[train_mask] == labels[train_mask]).float().mean()
-            val_acc = (preds[val_mask] == labels[val_mask]).float().mean()
-            test_acc = (preds[test_mask] == labels[test_mask]).float().mean()
-            if val_acc > best_val_acc:
-                best_val_acc, best_test_acc = val_acc, test_acc
+            with torch.no_grad():
+                val_acc = (preds[val_mask] == labels[val_mask]).float().mean()
+                test_acc = (preds[test_mask] == labels[test_mask]).float().mean()
+                if val_acc > best_val_acc:
+                    best_val_acc, best_test_acc = val_acc, test_acc
 
             optimizer.zero_grad()
             loss.backward()
