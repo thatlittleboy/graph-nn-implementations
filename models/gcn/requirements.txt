@@ -1,0 +1,6 @@
+# general
+loguru
+
+# recommended to re-check requirements depending on ur hardware setup
+dgl
+torch
