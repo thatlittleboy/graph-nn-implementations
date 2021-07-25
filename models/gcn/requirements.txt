@@ -1,6 +1,2 @@
-# general
-loguru
-
-# recommended to re-check requirements depending on ur hardware setup
+-r "../../general_requirements.txt"
 dgl
-torch
